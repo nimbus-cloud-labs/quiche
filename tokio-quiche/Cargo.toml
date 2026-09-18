@@ -12,7 +12,7 @@ rust-version = "1.88"
 build = "build.rs"
 
 [features]
-default = ["qlog-gzip", "qlog-zstd"]
+default = ["qlog", "qlog-gzip", "qlog-zstd"]
 
 # Forwarded quiche features for re-exports
 fuzzing = ["quiche/fuzzing"]
@@ -43,6 +43,8 @@ capture_keylogs = []
 # Enable scheduling & poll duration histograms for tokio tasks.
 tokio-task-metrics = []
 
+qlog = ["dep:qlog", "quiche/qlog"]
+
 # Enable gzip compression for QLOG output files. Forwards to the
 # `qlog` crate's `gzip` feature so `QuicSettings::qlog_compression =
 # QlogCompression::Gzip` is available at runtime and emits
@@ -52,7 +54,7 @@ tokio-task-metrics = []
 #
 # May be combined with `qlog-zstd`; the algorithm is selected per
 # connection at runtime via `QuicSettings::qlog_compression`.
-qlog-gzip = ["qlog/gzip"]
+qlog-gzip = ["qlog", "qlog/gzip"]
 
 # Enable zstd compression for QLOG output files. Forwards to the
 # `qlog` crate's `zstd` feature so `QuicSettings::qlog_compression =
@@ -62,7 +64,7 @@ qlog-gzip = ["qlog/gzip"]
 #
 # May be combined with `qlog-gzip`; the algorithm is selected per
 # connection at runtime via `QuicSettings::qlog_compression`.
-qlog-zstd = ["qlog/zstd"]
+qlog-zstd = ["qlog", "qlog/zstd"]
 
 [package.metadata.cargo-machete]
 # boring-sys is a dependency solely for its `DEP_BORINGSSL_VERSION_MAJOR`
@@ -80,17 +82,15 @@ boring-sys = { workspace = true }
 bytes = { workspace = true }
 crossbeam = { workspace = true, default-features = false }
 datagram-socket = { workspace = true }
-foundations = { workspace = true, default-features = false, features = [
-  "server-client-common-default",
-] }
+foundations = { workspace = true, default-features = false, features = ["client-telemetry"] }
 futures = { workspace = true }
 futures-util = { workspace = true }
 ipnetwork = { workspace = true }
 log = { workspace = true }
 octets = { workspace = true }
 pin-project = { workspace = true }
-qlog = { workspace = true, features = ["foundations"] }
-quiche = { workspace = true, features = ["boringssl-boring-crate", "qlog"] }
+qlog = { workspace = true, optional = true }
+quiche = { workspace = true, features = ["boringssl-boring-crate"] }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_with = { workspace = true }
 slog-scope = { workspace = true }
@@ -113,6 +113,7 @@ url = { workspace = true }
 assert_matches = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 env_logger = { workspace = true }
+foundations = { workspace = true, default-features = false, features = ["testing"] }
 h3i = { workspace = true }
 http = "1"
 http-body = "1"

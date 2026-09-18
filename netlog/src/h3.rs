@@ -172,8 +172,9 @@ pub fn parse_event(
 
         // The netlog format is continually evolving, log any unknown types
         // in case they are interesting.
-        _ =>
-            log::trace!("skipping unknown HTTP/3 type....{}", event_hdr.ty_string),
+        _ => {
+            log::trace!("skipping unknown HTTP/3 type....{}", event_hdr.ty_string)
+        },
     }
 
     None

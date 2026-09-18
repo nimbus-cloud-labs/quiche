@@ -56,7 +56,10 @@ async fn main() {
         .await
         .expect("UDP socket should be bindable");
     let mut quic_settings = QuicSettings::default();
-    quic_settings.qlog_dir = std::env::var("QLOGDIR").ok();
+    #[cfg(feature = "qlog")]
+    {
+        quic_settings.qlog_dir = std::env::var("QLOGDIR").ok();
+    }
     quic_settings.cc_algorithm = args.cc_algorithm.clone();
     quic_settings.initial_congestion_window_packets = args.initial_cwnd_packets;
     quic_settings.enable_hystart = !args.disable_hystart;

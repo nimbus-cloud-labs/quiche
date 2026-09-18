@@ -24,16 +24,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use foundations::settings::settings;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 use serde_with::DurationMilliSeconds;
 use std::time::Duration;
 
+#[cfg(feature = "qlog")]
 pub use qlog::writer::QlogCompression;
 
 /// QUIC configuration parameters.
 #[serde_as]
-#[settings]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[non_exhaustive]
 pub struct QuicSettings {
     /// Configures the list of supported application protocols.
@@ -65,6 +67,7 @@ pub struct QuicSettings {
     /// supported for servers.
     ///
     /// Defaults to `false`.
+    #[serde(default)]
     pub enable_early_data: bool,
 
     /// Sets the `initial_max_data` transport parameter.
@@ -145,13 +148,17 @@ pub struct QuicSettings {
     /// If set to `true`, any received QUIC initial will immediately spawn a
     /// connection and start crypto operations for the handshake. Otherwise,
     /// the client is asked to execute a stateless retry first (the default).
+    #[serde(default)]
     pub disable_client_ip_validation: bool,
 
     /// Path to a file in which TLS secrets will be logged in
     /// [SSLKEYLOGFILE format](https://tlswg.org/sslkeylogfile/draft-ietf-tls-keylogfile.html).
+    #[serde(default)]
     pub keylog_file: Option<String>,
 
     /// Path to a directory where QLOG files will be saved.
+    #[cfg(feature = "qlog")]
+    #[serde(default)]
     pub qlog_dir: Option<String>,
 
     /// Compression applied to QLOG output files.
@@ -162,6 +169,7 @@ pub struct QuicSettings {
     /// (both enabled by default); builds that disable those features
     /// cannot reference the corresponding variant.
     #[serde(default)]
+    #[cfg(feature = "qlog")]
     pub qlog_compression: QlogCompression,
 
     /// Congestion control algorithm to use.
@@ -182,11 +190,13 @@ pub struct QuicSettings {
     /// Configures whether to enable relaxed loss detection on spurious loss.
     ///
     /// Defaults to `false`.
+    #[serde(default)]
     pub enable_relaxed_loss_threshold: bool,
 
     /// Configures whether to do path MTU discovery.
     ///
     /// Defaults to `false`.
+    #[serde(default)]
     pub discover_path_mtu: bool,
 
     /// Configures the maximum number of PMTUD probe attempts before treating
@@ -207,11 +217,13 @@ pub struct QuicSettings {
     ///
     /// Note: this also requires pacing-compatible
     /// [`SocketCapabilities`](crate::socket::SocketCapabilities).
+    #[serde(default)]
     pub enable_pacing: bool,
 
     /// Sets the max value for pacing rate.
     ///
     /// By default, there is no limit.
+    #[serde(default)]
     pub max_pacing_rate: Option<u64>,
 
     /// Optionally enables expensive versions of the
@@ -221,6 +233,7 @@ pub struct QuicSettings {
     /// The expensive versions add a label for the peer IP subnet (`/24` for
     /// IPv4, `/32` for IPv6). They thus generate many more time series if
     /// peers are arbitrary eyeballs from the global Internet.
+    #[serde(default)]
     pub enable_expensive_packet_count_metrics: bool,
 
     /// Forwards [`quiche`] logs into the logging system currently used by
@@ -233,12 +246,13 @@ pub struct QuicSettings {
     /// (and lots, and lots) of logs (the TRACE level emits a log record for
     /// every packet and frame) and you can very easily overwhelm your
     /// logging pipeline.
+    #[serde(default)]
     pub capture_quiche_logs: bool,
 
     /// A timeout for the QUIC handshake, in milliseconds.
     ///
     /// Disabled by default.
-    #[serde(rename = "handshake_timeout_ms")]
+    #[serde(default, rename = "handshake_timeout_ms")]
     #[serde_as(as = "Option<DurationMilliSeconds>")]
     pub handshake_timeout: Option<Duration>,
 
@@ -256,6 +270,7 @@ pub struct QuicSettings {
     /// [`verify_peer()`] for more.
     ///
     /// [`verify_peer()`]: https://docs.rs/quiche/latest/quiche/struct.Config.html#method.verify_peer
+    #[serde(default)]
     pub verify_peer: bool,
 
     /// The maximum size of the receiver connection flow control window.
@@ -276,6 +291,7 @@ pub struct QuicSettings {
     /// Previously controlled whether to use the `initial_max_data`
     /// transport parameter as the initial connection and stream flow
     /// control window.
+    #[serde(default)]
     pub use_initial_max_data_as_fc_window: bool,
 
     /// If true, send an advisory STREAMS_BLOCKED frame when the
@@ -283,6 +299,7 @@ pub struct QuicSettings {
     /// peer advertised MAX_STREAMS limit.
     ///
     /// Defaults to false.
+    #[serde(default)]
     pub enable_send_streams_blocked: bool,
 
     /// Configures whether to send GREASE values.
@@ -331,6 +348,7 @@ pub struct QuicSettings {
     /// connections, this is a no-op.
     ///
     /// Defaults to `None`.
+    #[serde(default)]
     pub stateless_reset_token: Option<u128>,
 
     /// Sets whether the QUIC connection should avoid reusing DCIDs over
@@ -339,6 +357,7 @@ pub struct QuicSettings {
     /// Defaults to `false`. See [`set_disable_dcid_reuse()`] for more.
     ///
     /// [`set_disable_dcid_reuse()`]: https://docs.rs/quiche/latest/quiche/struct.Config.html#method.disable_dcid_reuse
+    #[serde(default)]
     pub disable_dcid_reuse: bool,
 
     /// Specifies the number of bytes used to track unknown transport
@@ -349,6 +368,7 @@ pub struct QuicSettings {
     /// more.
     ///
     /// [`enable_track_unknown_transport_parameters()`]: https://docs.rs/quiche/latest/quiche/struct.Config.html#method.enable_track_unknown_transport_parameters
+    #[serde(default)]
     pub track_unknown_transport_parameters: Option<usize>,
 
     /// Configures whether the IO worker borrows its egress scratch buffer from
@@ -364,6 +384,67 @@ pub struct QuicSettings {
     /// Defaults to `true`.
     #[serde(default = "QuicSettings::default_pool_send_buffer")]
     pub pool_send_buffer: bool,
+}
+
+impl Default for QuicSettings {
+    fn default() -> Self {
+        Self {
+            alpn: Self::default_alpn(),
+            enable_dgram: Self::default_enable_dgram(),
+            dgram_recv_max_queue_len: Self::default_dgram_max_queue_len(),
+            dgram_send_max_queue_len: Self::default_dgram_max_queue_len(),
+            enable_early_data: false,
+            initial_max_data: Self::default_initial_max_data(),
+            initial_max_stream_data_bidi_local:
+                Self::default_initial_max_stream_data(),
+            initial_max_stream_data_bidi_remote:
+                Self::default_initial_max_stream_data(),
+            initial_max_stream_data_uni: Self::default_initial_max_stream_data(),
+            initial_max_streams_bidi: Self::default_initial_max_streams(),
+            initial_max_streams_uni: Self::default_initial_max_streams(),
+            max_idle_timeout: Self::default_max_idle_timeout(),
+            disable_active_migration: Self::default_disable_active_migration(),
+            active_connection_id_limit: Self::default_active_connection_id_limit(
+            ),
+            max_recv_udp_payload_size: Self::default_max_recv_udp_payload_size(),
+            max_send_udp_payload_size: Self::default_max_recv_udp_payload_size(),
+            disable_client_ip_validation: false,
+            keylog_file: None,
+            #[cfg(feature = "qlog")]
+            qlog_dir: None,
+            #[cfg(feature = "qlog")]
+            qlog_compression: QlogCompression::None,
+            cc_algorithm: Self::default_cc_algorithm(),
+            initial_congestion_window_packets:
+                Self::default_initial_congestion_window_packets(),
+            enable_relaxed_loss_threshold: false,
+            discover_path_mtu: false,
+            pmtud_max_probes: Self::default_pmtud_max_probes(),
+            enable_hystart: Self::default_enable_hystart(),
+            enable_pacing: false,
+            max_pacing_rate: None,
+            enable_expensive_packet_count_metrics: false,
+            capture_quiche_logs: false,
+            handshake_timeout: None,
+            listen_backlog: Self::default_listen_backlog(),
+            verify_peer: false,
+            max_connection_window: Self::default_max_connection_window(),
+            max_stream_window: Self::default_max_stream_window(),
+            use_initial_max_data_as_fc_window: false,
+            enable_send_streams_blocked: false,
+            grease: Self::default_grease(),
+            max_amplification_factor: Self::default_amplification_factor(),
+            send_capacity_factor: Self::default_send_capacity_factor(),
+            ack_delay_exponent: Self::default_ack_delay_exponent(),
+            max_ack_delay: Self::default_max_ack_delay(),
+            max_path_challenge_recv_queue_len:
+                Self::default_max_path_challenge_recv_queue_len(),
+            stateless_reset_token: None,
+            disable_dcid_reuse: false,
+            track_unknown_transport_parameters: None,
+            pool_send_buffer: Self::default_pool_send_buffer(),
+        }
+    }
 }
 
 impl QuicSettings {

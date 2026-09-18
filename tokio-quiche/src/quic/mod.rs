@@ -86,7 +86,9 @@ use std::time::Duration;
 use datagram_socket::DatagramSocketRecv;
 use datagram_socket::DatagramSocketSend;
 use foundations::telemetry::log;
+#[cfg(feature = "qlog")]
 use qlog::writer::make_qlog_writer_from_path;
+#[cfg(feature = "qlog")]
 use qlog::writer::qlog_file_name;
 
 use crate::http3::settings::Http3Settings;
@@ -230,6 +232,7 @@ where
 
     // Set the qlog writer here instead of in the `ClientConnector` to avoid
     // missing logs from early in the connection
+    #[cfg(feature = "qlog")]
     if let Some(qlog_dir) = &client_config.qlog_dir {
         log::info!("setting up qlogs"; "qlog_dir"=>qlog_dir);
         let id = format!("{:?}", scid);
@@ -306,7 +309,9 @@ where
     let acceptor = ConnectionAcceptor::new(
         ConnectionAcceptorConfig {
             disable_client_ip_validation: config.disable_client_ip_validation,
+            #[cfg(feature = "qlog")]
             qlog_dir: config.qlog_dir.clone(),
+            #[cfg(feature = "qlog")]
             qlog_compression: config.qlog_compression,
             keylog_file: config
                 .keylog_file

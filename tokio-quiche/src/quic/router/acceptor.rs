@@ -32,8 +32,11 @@ use std::time::Instant;
 use datagram_socket::DatagramSocketSend;
 use datagram_socket::DatagramSocketSendExt;
 use datagram_socket::MAX_DATAGRAM_SIZE;
+#[cfg(feature = "qlog")]
 use qlog::writer::make_qlog_writer_from_path;
+#[cfg(feature = "qlog")]
 use qlog::writer::qlog_file_name;
+#[cfg(feature = "qlog")]
 use qlog::writer::QlogCompression;
 use quiche::ConnectionId;
 use quiche::Header;
@@ -63,7 +66,9 @@ pub(crate) struct ConnectionAcceptor<S, M> {
 
 pub(crate) struct ConnectionAcceptorConfig {
     pub(crate) disable_client_ip_validation: bool,
+    #[cfg(feature = "qlog")]
     pub(crate) qlog_dir: Option<String>,
+    #[cfg(feature = "qlog")]
     pub(crate) qlog_compression: QlogCompression,
     pub(crate) keylog_file: Option<File>,
     #[cfg(target_os = "linux")]
@@ -115,6 +120,7 @@ where
         }
         .into_io()?;
 
+        #[cfg(feature = "qlog")]
         if let Some(qlog_dir) = &self.config.qlog_dir {
             let id = format!("{:?}", scid);
             let path = std::path::Path::new(qlog_dir)

@@ -30,6 +30,7 @@ use std::fs::File;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(feature = "qlog")]
 use qlog::writer::QlogCompression;
 
 use crate::quic::ConnectionHook;
@@ -48,7 +49,9 @@ const KEYLOGFILE_ENABLED: bool =
 pub(crate) struct Config {
     pub quiche_config: quiche::Config,
     pub disable_client_ip_validation: bool,
+    #[cfg(feature = "qlog")]
     pub qlog_dir: Option<String>,
+    #[cfg(feature = "qlog")]
     pub qlog_compression: QlogCompression,
     pub has_gso: bool,
     pub pacing_offload: bool,
@@ -103,7 +106,9 @@ impl Config {
             quiche_config: make_quiche_config(params, keylog_file.is_some())?,
             disable_client_ip_validation: quic_settings
                 .disable_client_ip_validation,
+            #[cfg(feature = "qlog")]
             qlog_dir: quic_settings.qlog_dir.clone(),
+            #[cfg(feature = "qlog")]
             qlog_compression: quic_settings.qlog_compression,
             has_gso,
             pacing_offload,

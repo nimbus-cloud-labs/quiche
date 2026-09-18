@@ -961,7 +961,9 @@ mod tests {
         let acceptor = ConnectionAcceptor::new(
             ConnectionAcceptorConfig {
                 disable_client_ip_validation: config.disable_client_ip_validation,
+                #[cfg(feature = "qlog")]
                 qlog_dir: config.qlog_dir.clone(),
+                #[cfg(feature = "qlog")]
                 qlog_compression: config.qlog_compression,
                 keylog_file: config
                     .keylog_file
